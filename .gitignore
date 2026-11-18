@@ -1,0 +1,37 @@
+# Private / runtime data: never committed.
+# tools/check_private_data.py enforces this in pre-commit and CI,
+# because .gitignore alone is defeated by `git add -f`.
+data/
+*.db
+*.db-*
+*.db.*
+*.log
+*.log.*
+*.csv
+*.mp4
+tests/fixtures/private/
+
+# Local ticket tracker (tickets may quote private event IDs and dates)
+.scratch/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+.import_linter_cache/
+
+# Environments and editors
+.venv/
+venv/
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store

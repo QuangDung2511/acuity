@@ -1,0 +1,94 @@
+[build-system]
+# 77+ for PEP 639 (SPDX `license` string and `license-files`).
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acuity"
+version = "0.1.0.dev0"
+description = "Local-only webcam focus companion: detects fatigue and distraction during focus sessions."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+# Only what is tested: 3.13 locally (Windows) and in CI. If the first CI
+# run shows mediapipe has no 3.13 wheel on an OS, move both this and the
+# CI matrix to 3.12.
+requires-python = ">=3.13"
+# Floors are the versions the evaluated build ran on (Python 3.13,
+# Windows 11). PySide6 replaces PyQt6 from the original build.
+dependencies = [
+    "PySide6>=6.8",
+    "mediapipe>=0.10.35",
+    "opencv-python>=4.13",
+    "numpy>=2.4",
+    "pyqtgraph>=0.14",
+]
+
+[project.scripts]
+acuity = "acuity.app:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0",
+    "pytest-qt>=4.5",
+    "ruff>=0.17",
+    "import-linter>=2.16",
+    "pre-commit>=4.7",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+# The theme loads its style sheets from next to theme.py.
+"acuity.ui.styles" = ["*.qss"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+qt_api = "pyside6"
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests", "tools"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    # The formatter owns line length. What it leaves long is comments
+    # and strings, which carry threshold evidence and stay readable.
+    "E501",
+    # Adding `strict=True` to zip() changes runtime behaviour (it raises
+    # on a length mismatch), so it is not a safe lint fix for ported code.
+    "B905",
+]
+
+[tool.importlinter]
+root_package = "acuity"
+# Needed so the forbidden contract below can name PySide6.
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Layers: ui -> core -> (db, utils, system)"
+type = "layers"
+# `:` siblings may import each other; none may import a layer above.
+# This also keeps `system` (platform adapters) from importing core or ui.
+layers = [
+    "acuity.ui",
+    "acuity.core",
+    "acuity.db : acuity.utils : acuity.system",
+]
+
+[[tool.importlinter.contracts]]
+name = "Pure core modules: no Qt"
+type = "forbidden"
+# import-linter rejects a contract that names a module that does not exist
+# yet, so each ticket that adds a pure core module (distraction_engine,
+# window_engine, focus_rules) adds it here.
+source_modules = [
+    "acuity.core.fatigue_engine",
+    "acuity.core.presence",
+    "acuity.core.calibration",
+    "acuity.core.distraction_engine",
+    "acuity.core.insights_metrics",
+]
+forbidden_modules = ["PySide6"]

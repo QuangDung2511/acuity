@@ -1,0 +1,52 @@
+# Local hooks run the tools installed in the venv by `pip install -e .[dev]`
+# (pyproject.toml sets minimum versions, so CI may run newer ones).
+# Commit with the project venv active, or the hooks cannot find the tools.
+#
+# Install once:  pre-commit install
+default_install_hook_types: [pre-commit, pre-push]
+
+repos:
+  - repo: local
+    hooks:
+      - id: private-data-guard
+        name: private-data guard
+        entry: python tools/check_private_data.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: module-headers
+        name: module headers (rule 4)
+        entry: python tools/check_headers.py
+        language: system
+        pass_filenames: false
+        types: [python]
+
+      - id: ruff-format
+        name: ruff format
+        entry: ruff format
+        language: system
+        types: [python]
+
+      - id: ruff-check
+        name: ruff check
+        entry: ruff check
+        language: system
+        types: [python]
+
+      - id: lint-imports
+        name: import-linter (layering)
+        entry: lint-imports
+        language: system
+        pass_filenames: false
+        types_or: [python, toml] # contracts live in pyproject.toml
+
+      # Same split as CI: QtMultimedia can hang, so the alert-manager tests
+      # run only in CI's separate, time-limited step.
+      - id: pytest
+        name: pytest
+        entry: pytest -q -x --ignore=tests/test_alert_manager.py
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
