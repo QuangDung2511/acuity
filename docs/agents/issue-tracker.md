@@ -4,7 +4,7 @@ Issues and specs for this repo live as markdown files in `.scratch/`.
 
 **`.scratch/` is gitignored and never pushed.** Tickets may quote event IDs, dates and measurements from the private corpus, which must not reach the public repo. Anything a ticket decides that the code needs goes into code comments, `CODING_STANDARDS.md` or `docs/decisions/`, summarised and marked "(private corpus, n=1)".
 
-There is no remote yet. When one is added, re-run `/setup-matt-pocock-skills` only if you want to move tracking to GitHub Issues; otherwise keep this file.
+The repo is public on GitHub, but tracking stays local: tickets quote private-corpus details that GitHub Issues would publish. Re-run `/setup-matt-pocock-skills` only if you decide to move tracking to GitHub Issues; otherwise keep this file.
 
 ## Conventions
 
