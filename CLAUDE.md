@@ -40,6 +40,10 @@ Review rules live in `CODING_STANDARDS.md`. Read it before writing code that wil
 - Evidence from the private corpus is summarised: a measurement marked "(private corpus, n=1)". Keep event IDs, session filenames, dates and personal details out of code, comments, docs and commit messages.
 - Long tuning histories belong in `docs/decisions/`; the code comment carries a short summary and a pointer.
 
+## Git workflow
+
+Before starting a ticket, committing, pushing or opening a PR, read `docs/agents/git-workflow.md`: one branch and one PR per ticket, merged into a protected `main` once CI passes on all three OSes.
+
 ## Agent skills
 
 ### Issue tracker
