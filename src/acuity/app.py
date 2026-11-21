@@ -34,8 +34,8 @@ def main() -> int:
     Returns the process exit code (0 = success).
     """
     # 1. Logging  (get_logger already attached the console handler at
-    #    import; this adds the log file in the user data folder)
-    setup_logging(paths.data_dir())
+    #    import; this adds the log file in the user log folder)
+    setup_logging(paths.log_dir())
     log.info("═══ Acuity starting ═══")
 
     # 2. Qt application instance  (must exist before any QWidget)
