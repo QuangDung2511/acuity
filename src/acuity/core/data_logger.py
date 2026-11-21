@@ -1,7 +1,7 @@
 # Per-frame CSV data logger for benchmarking and analysis.
 # ─────────────────────────────────────────────────────────────────
 # Activated when debug mode is ON.  Writes one row per frame to
-# <data_dir>/logs/session_YYYYMMDD_HHMMSS.csv (data_dir() from the
+# <log_dir>/session_YYYYMMDD_HHMMSS.csv (log_dir() from the
 # paths adapter, so ACUITY_DATA_DIR redirects it), capturing all raw
 # engine metrics and fatigue scoring signals in a single flat table.
 #
@@ -125,7 +125,7 @@ assert len(_HEADERS) == 50, f"Expected 50 columns, got {len(_HEADERS)}"
 class DataLogger:
     """Writes one CSV row per frame to a timestamped session file.
 
-    The file goes in ``<data_dir>/logs/``, created if absent.
+    The file goes in ``paths.log_dir()``, created if absent.
 
     Notes
     -----
@@ -136,7 +136,7 @@ class DataLogger:
     """
 
     def __init__(self) -> None:
-        base = paths.data_dir() / "logs"
+        base = paths.log_dir()
         base.mkdir(parents=True, exist_ok=True)
 
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
