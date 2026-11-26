@@ -1,7 +1,10 @@
 # Camera backend and frame source: how OpenCV opens a capture.
 # ─────────────────────────────────────────────────────────────────
 # Responsibilities:
-#   • default_backend(): the OpenCV capture backend for this OS.
+#   • create_camera(): the capture backend for this OS (DirectShow on
+#     Windows, AVFoundation on macOS, V4L2 on Linux), with an `available`
+#     flag and a human-readable `reason` that Settings shows.
+#   • default_backend(): that backend, cached, for open_source().
 #   • open_source(spec): open a frame source from a camera index or a
 #     video file path.
 #
@@ -9,10 +12,14 @@
 # (the CV worker).
 #
 # Design:
-#   • Minimal, Windows-tested adapter (ticket 03).  Ticket 07 maps the
-#     macOS and Linux backends and adds `available` / `reason` and the
-#     create_*() factory the package header describes.  Until then any
-#     other OS gets OpenCV's automatic choice, with a logged warning.
+#   • Every backend is a constant in OpenCV itself, so create_camera()
+#     imports no OS-specific module; it only picks by sys.platform.
+#   • `available` means this OpenCV build includes the backend
+#     (videoio_registry), checked without opening a camera.  Whether a
+#     physical camera is plugged in is the device scan's job.  The pip
+#     opencv-python wheels include all three.
+#   • An unmapped OS gets OpenCV's automatic choice, flagged in `reason`
+#     and the log rather than refused: its camera may still work.
 #   • The frame source is the test seam.  The app opens its camera only
 #     through open_source(), so a test can replace it with a synthetic
 #     or recorded source and drive the real pipeline headless.
@@ -24,6 +31,7 @@ from __future__ import annotations
 import functools
 import os
 import sys
+from dataclasses import dataclass
 from typing import Protocol
 
 import cv2
@@ -48,20 +56,44 @@ class FrameSource(Protocol):
     def getBackendName(self) -> str: ...
 
 
+# Native capture backend per sys.platform, with the name Settings shows.
+_NATIVE_BACKENDS: dict[str, tuple[int, str]] = {
+    "win32": (cv2.CAP_DSHOW, "DirectShow"),
+    "darwin": (cv2.CAP_AVFOUNDATION, "AVFoundation"),
+    "linux": (cv2.CAP_V4L2, "V4L2"),
+}
+
+
+@dataclass(frozen=True)
+class CameraAdapter:
+    """The capture backend for this OS, and whether OpenCV can use it."""
+
+    backend: int
+    available: bool
+    reason: str
+
+
+def create_camera() -> CameraAdapter:
+    """Choose the camera backend for ``sys.platform``.
+
+    Opens no camera.
+    """
+    if sys.platform not in _NATIVE_BACKENDS:
+        reason = f"No camera backend mapped for {sys.platform}; using OpenCV's automatic choice."
+        log.warning(reason)
+        return CameraAdapter(backend=cv2.CAP_ANY, available=True, reason=reason)
+    backend, name = _NATIVE_BACKENDS[sys.platform]
+    if backend not in cv2.videoio_registry.getCameraBackends():
+        reason = f"This OpenCV build has no {name} support, so the camera cannot open."
+        log.warning(reason)
+        return CameraAdapter(backend=backend, available=False, reason=reason)
+    return CameraAdapter(backend=backend, available=True, reason=f"Camera opens with {name}.")
+
+
 @functools.cache
 def default_backend() -> int:
-    """Return the OpenCV capture backend for this OS.
-
-    DirectShow on Windows (the original app's backend).  Cached, so the
-    unhandled-platform warning is logged once.
-    """
-    if sys.platform == "win32":
-        return cv2.CAP_DSHOW
-    log.warning(
-        "No camera backend mapped for %s yet; using OpenCV's automatic choice.",
-        sys.platform,
-    )
-    return cv2.CAP_ANY
+    """Return the OpenCV capture backend for this OS (cached)."""
+    return create_camera().backend
 
 
 def open_source(spec: int | str | os.PathLike[str]) -> FrameSource:

@@ -47,6 +47,7 @@ from PySide6.QtWidgets import (
 )
 
 from acuity.core.camera import CameraManager
+from acuity.system import camera as camera_adapter
 from acuity.ui.styles.theme import apply_theme
 from acuity.utils.config import ConfigManager
 from acuity.utils.constants import (
@@ -116,7 +117,8 @@ class SettingsTab(QWidget):
          Distractions row.
       2. Thresholds — sliders for Trigger A (head pose) and Away.
       3. Audio — custom audio file pickers per alert type.
-      4. Camera — device dropdown (populated from CameraManager.list_devices).
+      4. Camera — device dropdown (populated from CameraManager.list_devices)
+         and the camera adapter's availability and reason.
       5. Insights — daily focus goal (hours) spin box.
       6. Appearance — theme toggle (Dark / Light).
 
@@ -510,10 +512,12 @@ class SettingsTab(QWidget):
         return row
 
     def _build_camera_group(self) -> QGroupBox:
-        """Camera group: device dropdown."""
+        """Camera group: device dropdown, and the camera adapter's status."""
         group = QGroupBox("Camera")
-        layout = QHBoxLayout(group)
+        outer = QVBoxLayout(group)
+        layout = QHBoxLayout()
         layout.setSpacing(12)
+        outer.addLayout(layout)
 
         lbl = QLabel("Input Device:")
         lbl.setProperty("secondary", True)
@@ -532,6 +536,14 @@ class SettingsTab(QWidget):
         layout.addStretch(1)
 
         self._camera_combo.currentIndexChanged.connect(self._on_camera_changed)
+
+        adapter = camera_adapter.create_camera()
+        status = "Available" if adapter.available else "Unavailable"
+        status_lbl = QLabel(f"{status}: {adapter.reason}")
+        status_lbl.setObjectName("settingsCameraStatus")
+        status_lbl.setProperty("secondary", True)
+        status_lbl.setWordWrap(True)
+        outer.addWidget(status_lbl)
 
         # Populate immediately.
         self._populate_camera_list()
