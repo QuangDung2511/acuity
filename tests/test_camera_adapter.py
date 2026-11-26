@@ -40,19 +40,35 @@ def test_each_platform_gets_its_native_backend(monkeypatch, platform, backend, n
     assert name in adapter.reason
 
 
-def test_backend_missing_from_opencv_build_is_reported_unavailable(monkeypatch):
-    """A custom OpenCV build without V4L2 cannot open the Linux camera.
-    Settings must say why, instead of the session failing with a bare
+def test_native_backend_missing_from_opencv_build_falls_back_and_says_so(monkeypatch):
+    """A distro or custom OpenCV build without V4L2 can usually still
+    reach the webcam through another backend (GStreamer), so the camera
+    falls back to OpenCV's automatic choice instead of refusing to open,
+    and Settings says the native backend is missing."""
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr(
+        camera.cv2.videoio_registry, "getCameraBackends", lambda: (cv2.CAP_GSTREAMER,)
+    )
+
+    adapter = camera.create_camera()
+
+    assert adapter.backend == cv2.CAP_ANY
+    assert adapter.available
+    assert "V4L2" in adapter.reason
+    assert "automatic" in adapter.reason
+
+
+def test_opencv_build_without_any_camera_backend_is_unavailable(monkeypatch):
+    """With no camera backend compiled in, no camera can open on any OS;
+    Settings must say so instead of the session failing with a bare
     "cannot open camera"."""
     monkeypatch.setattr(sys, "platform", "linux")
     monkeypatch.setattr(camera.cv2.videoio_registry, "getCameraBackends", lambda: ())
 
     adapter = camera.create_camera()
 
-    assert adapter.backend == cv2.CAP_V4L2
     assert not adapter.available
-    assert "V4L2" in adapter.reason
-    assert "OpenCV" in adapter.reason
+    assert "no camera support" in adapter.reason
 
 
 def test_unmapped_platform_falls_back_to_automatic_choice_and_says_so(monkeypatch):
@@ -60,6 +76,9 @@ def test_unmapped_platform_falls_back_to_automatic_choice_and_says_so(monkeypatc
     a working camera, so it gets OpenCV's automatic choice, but the
     reason flags the guess rather than hiding it."""
     monkeypatch.setattr(sys, "platform", "freebsd14")
+    monkeypatch.setattr(
+        camera.cv2.videoio_registry, "getCameraBackends", lambda: (cv2.CAP_GSTREAMER,)
+    )
 
     adapter = camera.create_camera()
 
