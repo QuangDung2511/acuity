@@ -16,8 +16,9 @@
 #     imports no OS-specific module; it only picks by sys.platform.
 #   • `available` means this OpenCV build includes the backend
 #     (videoio_registry), checked without opening a camera.  Whether a
-#     physical camera is plugged in is the device scan's job.  The pip
-#     opencv-python wheels include all three.
+#     physical camera is plugged in is the device scan's job.  The
+#     Windows wheel in use includes DirectShow; the macOS and Linux
+#     wheels are expected to include theirs but are untested here.
 #   • An unmapped OS gets OpenCV's automatic choice, flagged in `reason`
 #     and the log rather than refused: its camera may still work.
 #   • The frame source is the test seam.  The app opens its camera only
